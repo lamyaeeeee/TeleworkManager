@@ -1,0 +1,149 @@
+.calendarTable {
+    width: 100%;
+    text-align: center;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+  }
+  
+  .weekday {
+    background-color: #f8f9fa;
+    text-align: center;
+    padding: 10px 0;
+    border: 1px solid #dee2e6;
+    font-weight: bold;
+  }
+  
+  .calendarDay {
+    text-align: center  !important;
+    padding: 20px 0;
+    border: 1px solid #dee2e6;
+    cursor: pointer;
+    position: relative;
+    transition: background-color 0.3s;
+  }
+  
+  .calendarDay.otherMonth {
+    background-color: #f0f0f0;
+    cursor: default;
+  }
+  
+  .date {
+    font-size: 16px;
+    display: inline-block  !important;
+  }
+  
+  .circle {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background-color: #ddd;
+    margin: 0 auto;
+    transition: background-color 0.3s ease;
+    .selected {
+      background-color: #2e7cb3  ;
+    }
+  }
+  
+  
+  .legend {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+  
+  .legendBox {
+    width: 20px;
+    height: 20px;
+    display: inline-block;
+    margin-right: 5px;
+  }
+  
+  .legendBox + span {
+    margin-right: 20px;
+  }
+  
+  .dimmed {
+    color: #a0a0a0;
+  }
+  
+  .pastDate {
+    cursor: not-allowed;
+    .date {
+      text-decoration: line-through;
+    }
+  }
+  
+  .today {
+    border-left: 2px solid #2a86bb;
+    border-right: 2px solid #2a86bb;
+    background-color: #e3f7ff !important;
+    font-weight: bold !important;
+  }
+  .outsideMonth {
+    background-color: rgb(201, 201, 201);
+    cursor: pointer;
+  }
+  
+  .calendarDay.pending {
+    cursor: pointer;
+  }
+  
+  .approved {
+    pointer-events: none;
+  }
+  
+  .approvedCircle {
+    background-color: #38b347 !important;
+  }
+  
+  .rejectedCircle {
+    background-color: #ED2B2A !important;
+  }
+  
+  .rejected .tooltip {
+    display: block;
+  }
+  
+  .tooltip {
+    display: none;
+    position: absolute;
+    top: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #333;
+    color: white;
+    padding: 5px;
+    border-radius: 3px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  
+  .tooltip::after {
+    content: "";
+    position: absolute;
+    bottom: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 5px;
+    border-style: solid;
+    border-color: #333 transparent transparent transparent;
+  }
+  .naviDate {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    gap: 20px;
+  
+  }
+  .selectedCircle {
+    background-color: #2a86bb;
+  }
+  
+  .customIconButton:hover {
+    color: #208AAE;
+  }
+  
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+  }
