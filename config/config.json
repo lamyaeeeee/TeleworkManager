@@ -9,10 +9,19 @@
           "manifest": "./src/webparts/collaboratorPart/CollaboratorPartWebPart.manifest.json"
         }
       ]
+    },
+    "manager-part-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/managerPart/ManagerPartWebPart.js",
+          "manifest": "./src/webparts/managerPart/ManagerPartWebPart.manifest.json"
+        }
+      ]
     }
   },
   "externals": {},
   "localizedResources": {
-    "CollaboratorPartWebPartStrings": "lib/webparts/collaboratorPart/loc/{locale}.js"
+    "CollaboratorPartWebPartStrings": "lib/webparts/collaboratorPart/loc/{locale}.js",
+    "ManagerPartWebPartStrings": "lib/webparts/managerPart/loc/{locale}.js"
   }
 }

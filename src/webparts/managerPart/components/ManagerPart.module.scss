@@ -1,0 +1,331 @@
+* {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif !important;
+}
+
+.calendarTable {
+    width: 100%;
+    text-align: center;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+  }
+ 
+
+  .calendarDay, .calendarDayForIcons {
+    text-align: center  !important;
+    height: 100px; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 0;
+    border: 1px solid #dee2e6;
+    cursor: default;
+    position: relative;
+    transition: background-color 0.3s;
+    width: 20%;
+    box-sizing: border-box;
+    min-width: 100px !important;
+  }
+  
+  .weekday {
+    background-color: #047bb3;
+    position: relative;
+    text-align: center !important;
+    padding: 10px 0;
+    border: 1px solid #dee2e6;
+    font-weight: bold !important;
+    color : white  !important;
+    font-size:18px!important;
+  }
+  
+
+
+  
+  .calendarDay.otherMonth {
+    background-color: #f8f9fa;
+    cursor: pointer;
+  }
+  
+  .date {
+    font-size: 20px; /* Adjust font size */
+    color: #000; /* Ensure date text is visible */
+}
+.circleWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  flex-direction: column;
+}
+  .circle {
+    width: 50px; /* Increased size */
+    height: 50px; /* Increased size */
+    border-radius: 50%;
+    border: 2px solid transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    transition: border-color 0.3s ease;
+    margin-bottom: 10px;
+    .selected {
+      background-color: #2e7cb3  ;
+    }
+}
+  
+  
+  .dimmed {
+    color: #a0a0a0;
+  }
+  
+  .pastDate {
+    cursor: default;
+    .date {
+      text-decoration: line-through;
+    }
+  }
+  
+  .today {
+    border-left: 2px solid #2a86bb;
+    border-right: 2px solid #2a86bb;
+    background-color: #e3f7ff !important;
+    font-weight: bold !important;
+  }
+  .outsideMonth {
+    background-color: rgb(201, 201, 201);
+    cursor: default;
+  }
+  
+  .calendarDay.pending {
+    cursor: default;
+  }
+  .done {
+    pointer-events: none;
+  }
+  .approved {
+    pointer-events: none;
+  }
+  
+  .pendingCircle {
+    background-color: #e1effc; /* Soft Pastel Blue */
+    border: 2px solid #CAF4FF; /* Matching border */
+}
+
+.approvedCircle {
+    background-color: #CDFADB; /* Soft Pastel Green */
+    border: 2px solid #C8FFE0; /* Matching border */
+}
+
+.rejectedCircle {
+    background-color: #FFDFDB; /* Soft Pastel Pink */
+    border: 2px solid #FFDFDB; /* Matching border */
+}
+  .rejected .tooltip {
+    display: block;
+  }
+ 
+  .tooltip {
+    display: none;
+    position: absolute;
+    top: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #333;
+    color: white;
+    padding: 5px;
+    border-radius: 3px;
+    font-size: 12px;
+    width: 150px; /* Fixer la largeur de la tooltip */
+    max-width: 200px; /* Largeur maximale de la tooltip */
+    word-wrap: break-word; /* Permet le retour à la ligne */
+}
+
+.tooltip::after {
+    content: "";
+    position: absolute;
+    bottom: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 5px;
+    border-style: solid;
+    border-color: #333 transparent transparent transparent;
+}
+
+  .naviDate {
+    margin-top:35px;
+    display: flex;
+    align-items: center;
+    justify-content: space-evenly;
+    gap: 20px;
+  margin-bottom :20px;
+  }
+
+  .selectedCircle {
+    background-color: #2a86bb;
+  }
+  
+  .customIconButton:hover {
+    color: #2380ba  !important;
+  }
+  .customIconButton{
+    color: #2380ba  !important;
+  }
+  
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .actions {
+    display: flex;
+    justify-content: space-between;
+    padding: 16px;
+  }
+  .emailField {
+    margin: 16px 0;
+    width: 100%;
+    max-width: 400px;
+  }
+
+  .legend {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 40px; 
+    margin: 2px 0;
+    flex-wrap: wrap;
+  }
+  .container {
+    display: flex;
+    justify-content: space-between ;
+    align-items: center;
+    
+  }
+  .calendarContainer {
+    margin: 0 75px;
+    padding: 0 75px; 
+  }
+  .legendItem {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    font-size: 20px;
+    color: #333;
+  }
+  
+  .legendBox {
+  width: 16px;
+  height: 16px; 
+  margin-right: 5px;
+}
+.button {
+  margin-left: auto; 
+  padding: 4px 8px;
+}
+.label {
+  display: inline-block;
+  padding: 8px 12px;
+  border-radius: 25px; 
+  font-size: 18px;
+  text-align: center;
+  min-width: 70px;
+}
+
+.pendingg {
+  background-color: #e1effc; 
+  color: #0F67B1; 
+}
+
+.approvedd {
+
+  background-color: #CDFADB;
+  color:#0D7C66;
+}
+
+.rejectedd {
+  background-color: #FFDFDB; 
+  color: #C63C51; 
+}
+.customTitle{
+    font-size: 30px; 
+    font-weight: 700 !important;
+    color: #2380ba  !important;
+  }
+  .customMonth{
+    color :#2380ba;
+
+  }
+  .cell {
+    cursor: default;
+    text-align: center;
+  }
+  .customButton {
+    margin: 10px;
+  }
+
+  ////
+  /// 
+ .dateWrapper {
+    position: relative;
+    display: inline-block;
+  }
+  
+
+  .statusWrapper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%; /* Ensure the statusWrapper takes the full width of the cell */
+    position: absolute;
+    bottom: 10px; /* Adjust this to control the vertical positioning of the icons */
+}
+  
+
+  .pendingIcon {
+  font-size: 40px !important; 
+  color: #007bff;
+  background-color: transparent; 
+  border-radius: 50%; 
+  padding: 0;
+  margin: 0; 
+}
+
+.approvedIcon {
+  font-size: 40px !important; 
+  color: #4caf50; 
+}
+
+.rejectedIcon {
+  font-size: 40px !important; 
+  color: #f44336;
+}
+
+.pendingIconDefault {
+  color: #ffc107; 
+}
+
+.pendingIcon:hover {
+  color: #0056b3; 
+  cursor: pointer; 
+}
+
+
+.dialogHeader {
+  display: flex;
+  justify-content: space-between;
+  padding: 22px;
+  padding-left:64px;
+  padding-right:60px;
+  padding-bottom :10px;
+
+  margin-Bottom:20px,
+}
+
+.imageContainer {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.dialogContentPaddingFix {
+  padding: 0 !important;
+}
