@@ -4,7 +4,7 @@ export const getCollaboratorsByManager = async (manager: string): Promise<string
   try {
     const items = await sp.web.lists.getByTitle("DemandeCollaborateur")
       .items
-      .filter(`Manager/Title eq '${manager}'`) //.filter(`Manager/Title eq '${manager}' and Statut eq 'en attente'`)
+      .filter(`Manager/Title eq '${manager}'`) //.filter(`Manager/Title eq '${manager}' and Statut eq 'en attente'`) si on veut que celles en attentes 
       .select("Collaborateur/Title")
       .expand("Collaborateur")
       .get();

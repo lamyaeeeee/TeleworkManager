@@ -61,13 +61,13 @@ export async function sendTeleworkRequest(
 
 export async function getCollaboratorEmail(
   collaborator: string
-): Promise<string | null> {
+): Promise<string | undefined> {
   try {
     const user = await sp.web.ensureUser(collaborator);
-    return user.data.Email || null;
+    return user.data.Email || undefined;
   } catch (error) {
     console.error("Erreur:", error);
-    return null;
+    return undefined;
   }
 }
 

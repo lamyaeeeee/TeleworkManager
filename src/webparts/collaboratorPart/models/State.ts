@@ -10,6 +10,7 @@ export interface State {
     managerEmail: string;
     modalType: "save" | "send" | "";
     managerEmails: string[];
-    emailError: string | null;
+    emailError: string | undefined;
+    
   }
   

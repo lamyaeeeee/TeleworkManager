@@ -1,5 +1,5 @@
 * {
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif !important;
+  font-family: Radical, Arial, sans-serif !important;
 }
 
 .calendarTable {
@@ -9,7 +9,6 @@
     margin-bottom: 20px;
   }
  
-
   .calendarDay, .calendarDayForIcons {
     text-align: center  !important;
     height: 100px; 
@@ -28,7 +27,7 @@
   }
   
   .weekday {
-    background-color: #047bb3;
+    background-color: #118ec5;
     position: relative;
     text-align: center !important;
     padding: 10px 0;
@@ -38,17 +37,15 @@
     font-size:18px!important;
   }
   
-
-
   
   .calendarDay.otherMonth {
-    background-color: #f8f9fa;
+    background-color: #f6f6f7;
     cursor: pointer;
   }
   
   .date {
-    font-size: 20px; /* Adjust font size */
-    color: #000; /* Ensure date text is visible */
+    font-size: 18px;
+    color: #000; 
 }
 .circleWrapper {
   display: flex;
@@ -58,8 +55,8 @@
   flex-direction: column;
 }
   .circle {
-    width: 50px; /* Increased size */
-    height: 50px; /* Increased size */
+    width: 50px;
+    height: 50px; 
     border-radius: 50%;
     border: 2px solid transparent;
     display: flex;
@@ -72,7 +69,6 @@
       background-color: #2e7cb3  ;
     }
 }
-  
   
   .dimmed {
     color: #a0a0a0;
@@ -107,18 +103,18 @@
   }
   
   .pendingCircle {
-    background-color: #e1effc; /* Soft Pastel Blue */
-    border: 2px solid #CAF4FF; /* Matching border */
+    background-color: #e1effc; 
+    border: 2px solid #CAF4FF;
 }
 
 .approvedCircle {
-    background-color: #CDFADB; /* Soft Pastel Green */
-    border: 2px solid #C8FFE0; /* Matching border */
+    background-color: #CDFADB; 
+    border: 2px solid #C8FFE0;
 }
 
 .rejectedCircle {
-    background-color: #FFDFDB; /* Soft Pastel Pink */
-    border: 2px solid #FFDFDB; /* Matching border */
+    background-color: #FFDFDB; 
+    border: 2px solid #FFDFDB; 
 }
   .rejected .tooltip {
     display: block;
@@ -135,9 +131,9 @@
     padding: 5px;
     border-radius: 3px;
     font-size: 12px;
-    width: 150px; /* Fixer la largeur de la tooltip */
-    max-width: 200px; /* Largeur maximale de la tooltip */
-    word-wrap: break-word; /* Permet le retour à la ligne */
+    width: 150px; 
+    max-width: 200px;
+    word-wrap: break-word; 
 }
 
 .tooltip::after {
@@ -249,10 +245,10 @@
 .customTitle{
     font-size: 30px; 
     font-weight: 700 !important;
-    color: #2380ba  !important;
+    color: #118ec5  !important;
   }
   .customMonth{
-    color :#2380ba;
+    color :#118ec5;
 
   }
   .cell {
@@ -275,9 +271,9 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    width: 100%; /* Ensure the statusWrapper takes the full width of the cell */
+    width: 100%; 
     position: absolute;
-    bottom: 10px; /* Adjust this to control the vertical positioning of the icons */
+    bottom: 10px; 
 }
   
 

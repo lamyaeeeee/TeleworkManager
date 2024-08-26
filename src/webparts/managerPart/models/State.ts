@@ -3,12 +3,12 @@ import { DateUpdate} from "./DateUpdate"
 export interface State {
     collaborators: string[];
     filteredCollaborators: string[];
-    selectedCollaborator: string | null;
+    selectedCollaborator: string | undefined;
     dates: { date: string; status: string }[];
     openDialog: boolean;
     currentMonth: moment.Moment;
     tooltipMessage: string;
-    emailError: string | null;
+    emailError: string | undefined;
     updates: DateUpdate[];
     openDialogMotif: boolean;
     currentDate: string;
@@ -17,4 +17,6 @@ export interface State {
     snackbarMessage: string;
     collaboratorCount: number;
     openDialogCollab: boolean;
+    isManager: boolean;
+    loading:boolean,
   }

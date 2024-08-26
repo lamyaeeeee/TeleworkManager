@@ -8,7 +8,8 @@ import {
   updateDatesWithManager,
 } from "../services/managerService";
 import styles from "./ManagerPart.module.scss";
-import { getDaysInMonth } from "../../collaboratorPart/services/dateService"
+import { getDaysInMonth } from "../../collaboratorPart/services/dateService";
+import { getManagerEmails } from "../../collaboratorPart/services/calendarService";
 import {
   getCollaboratorEmail,
   sendUpdateNotification,
@@ -22,6 +23,7 @@ import {
   TableBody,
   IconButton,
   Typography,
+  Container,
 } from "@mui/material";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
@@ -40,24 +42,24 @@ import Paper from "@mui/material/Paper";
 
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import {Props} from "../models/Props";
-import {State} from "../models/State";
+import { Props } from "../models/Props";
+import { State } from "../models/State";
 type Status = "Approuvé" | "Rejeté" | "En attente";
-
-
-
-
+import { sp } from "@pnp/sp/presets/all";
+import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
+import CircularProgress from "@mui/material/CircularProgress";
+import { AjouterButton ,AnnulerButton} from './button'; 
 class ManagerPart extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
     this.state = {
       collaborators: [],
       filteredCollaborators: [],
-      selectedCollaborator: null,
+      selectedCollaborator: undefined,
       dates: [],
       currentMonth: moment().startOf("month"),
       tooltipMessage: "",
-      emailError: null,
+      emailError: undefined,
       openDialog: false,
       updates: [],
       openDialogMotif: false,
@@ -67,18 +69,29 @@ class ManagerPart extends React.Component<Props, State> {
       snackbarMessage: "",
       collaboratorCount: 0,
       openDialogCollab: false,
+      isManager: false,
+      loading: true,
     };
   }
 
   async componentDidMount(): Promise<void> {
     const { manager } = this.props;
+    const user = await sp.web.currentUser.get();
+    const userEmail = user.Email;
     try {
-      const collaborators = await getCollaboratorsByManager(manager);
-      this.setState({
-        collaborators,
-        filteredCollaborators: collaborators,
-        collaboratorCount: collaborators.length,
-      });
+      const managers = await getManagerEmails();
+      const isManager = managers.some((manager) => manager.email === userEmail);
+      this.setState({ isManager, loading: false });
+      if (isManager) {
+        const collaborators = await getCollaboratorsByManager(manager);
+        this.setState({
+          collaborators,
+          filteredCollaborators: collaborators,
+          collaboratorCount: collaborators.length,
+        });
+      } else {
+        this.setState({ isManager });
+      }
     } catch (error) {
       console.error(
         "Erreur lors de la récupération des collaborateurs :",
@@ -94,12 +107,12 @@ class ManagerPart extends React.Component<Props, State> {
   }
   handleInputChange = async (
     event: React.ChangeEvent<{}>,
-    value: string | null
+    value: string | undefined
   ): Promise<void> => {
     this.setState({ selectedCollaborator: value }, async () => {
       if (value) {
         await this.loadDates();
-        this.handleCloseDialogCollab(); // Fermer le dialogue après sélection
+        this.handleCloseDialogCollab();
       }
     });
   };
@@ -238,13 +251,16 @@ class ManagerPart extends React.Component<Props, State> {
   };
 
   handleCloseDialog = (): void => {
-    this.setState({ openDialog: false, selectedCollaborator: null });
+    this.setState({ openDialog: false, selectedCollaborator: undefined });
   };
   handleOpenDialogCollab = (): void => {
     this.setState({ openDialogCollab: true });
   };
   handleCloseDialogCollab = (): void => {
     this.setState({ openDialogCollab: false });
+  };
+  handleRedirect = (): void => {
+    window.location.href = "/sites/communicationtools"; //remplacons ca apres avec le lien de la page de redirection
   };
   render(): JSX.Element {
     const {
@@ -256,9 +272,59 @@ class ManagerPart extends React.Component<Props, State> {
       snackbarMessage,
       openDialogCollab,
       collaboratorCount,
+      isManager,
+      loading,
     } = this.state;
     const days = getDaysInMonth(currentMonth);
     const weekdays = ["Lun", "Mar", "Mer", "Jeu", "Ven"];
+    if (loading) {
+      return (
+        <Container
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            height: "300px",
+          }}
+        >
+          <CircularProgress />
+        </Container>
+      );
+    }
+    if (!isManager) {
+      return (
+        <Container
+          maxWidth="sm"
+          style={{ textAlign: "center", marginTop: "50px" }}
+        >
+          <ErrorOutlineIcon style={{ fontSize: 80, color: "#d32f2f" }} />
+          <Typography
+            variant="h4"
+            style={{ marginTop: "20px", marginBottom: "20px" }}
+          >
+            Accès refusé
+          </Typography>
+          <Typography variant="body1" style={{ marginBottom: "30px" }}>
+            Vous n&apos;avez pas les droits nécessaires pour accéder à cette
+            page.
+          </Typography>
+          <Button
+            style={{
+              backgroundColor: "#047bb3",
+              borderRadius: "8px", 
+              color: "#fff",
+              textTransform: "none",
+              fontSize: "16px",
+              padding: "8px 18px",
+            }}
+            variant="contained"
+            onClick={this.handleRedirect}
+          >
+            Retour à l&apos;accueil
+          </Button>
+        </Container>
+      );
+    }
 
     return (
       <div>
@@ -270,21 +336,12 @@ class ManagerPart extends React.Component<Props, State> {
             marginTop: "20px",
           }}
         >
-          <Button
-            variant="contained"
-            onClick={this.handleOpenDialogCollab}
-            style={{
-              
-              backgroundColor: "#047bb3",
-              borderRadius: "8px", // Ajustez la valeur selon vos besoins
-              color: "#fff",
-              textTransform: "none",
-              fontSize: "16px",
-                  padding: "8px 18px",
-            }}
-          >
-            Choisir collaborateur
-          </Button>
+           <AjouterButton
+      variant="contained"
+      onClick={this.handleOpenDialogCollab}
+    >
+      Choisir collaborateur
+    </AjouterButton>
         </div>
 
         <Dialog
@@ -560,33 +617,24 @@ class ManagerPart extends React.Component<Props, State> {
 
           {selectedCollaborator && (
             <div className={styles.dialogHeader}>
+              
+              <AnnulerButton
+        variant="contained"
+        onClick={this.handleCloseDialog}
+      >
+        Annuler
+      </AnnulerButton>
+
              
-              <Button variant="outlined"
-                    onClick={this.handleCloseDialog}
-                    color="primary"
-                    style={{
-                  borderRadius: "8px", // Ajustez la valeur selon vos besoins               
-                  textTransform: "none",
-                  fontSize: "16px",
-                  padding: "8px 18px",
-                    }}
-                  >
-                    Annuler
-                  </Button>
-                  <Button
-                onClick={this.handleSave}
-                color="primary"
-                style={{
-                  backgroundColor: "#047bb3",
-                  borderRadius: "8px", // Ajustez la valeur selon vos besoins
-                  color: "#fff",
-                  textTransform: "none",
-                  fontSize: "16px",
-                  padding: "8px 18px",
-                }}
-              >
-                Sauvegarder
-              </Button>
+
+
+              <AjouterButton
+      variant="contained"
+      onClick={this.handleSave}
+    >
+      Sauvegarder
+    </AjouterButton>
+             
             </div>
           )}
         </div>

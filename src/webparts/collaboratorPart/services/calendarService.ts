@@ -142,7 +142,7 @@ export const deleteDate =async (date: string, collaborator: string): Promise<boo
   }
 };
 
-export const getSavedDates = async (collaborator: string): Promise<{ date: string; status: string; manager: string | null, hasManager: boolean, motif?: string }[]> => {
+export const getSavedDates = async (collaborator: string): Promise<{ date: string; status: string; manager: string | undefined, hasManager: boolean, motif?: string }[]> => {
   try {
     const collaboratorId = await getCollaboratorId(collaborator);
     if (collaboratorId === 0) {
@@ -222,3 +222,4 @@ export const updateDatesWithManager = async (collaborator: string, managerEmail:
     return false;
   }
 };
+

@@ -10,7 +10,6 @@ export default class CollaboratorPartWebPart extends BaseClientSideWebPart<{}> {
 
   protected onInit(): Promise<void> {
     return super.onInit().then(() => {
-      // Configuration de PnPJS (si nécessaire)
       sp.setup({
         spfxContext: this.context as any
       }); 

@@ -23,7 +23,7 @@ import SendIcon from "@mui/icons-material/Send";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import styles from "./CollaboratorPart.module.scss";
-import { formatDate, getDaysInMonth } from "../services/dateService"
+import { formatDate, getDaysInMonth } from "../services/dateService";
 import {
   saveDate,
   deleteDate,
@@ -37,11 +37,10 @@ import {
 } from "../services/emailService";
 import EventAvailableIcon from "@mui/icons-material/EventAvailable";
 import Autocomplete from "@mui/material/Autocomplete";
-import {SavedDate} from "../models/SavedDate";
-import {Props} from "../models/Props";
-import {State} from "../models/State";
-
-import {  TeleworkRequest} from "../models/TeleworkRquest";
+import { SavedDate } from "../models/SavedDate";
+import { Props } from "../models/Props";
+import { State } from "../models/State";
+import { TeleworkRequest } from "../models/TeleworkRquest";
 
 class CollaboratorPart extends Component<Props, State> {
   constructor(props: Props) {
@@ -56,13 +55,12 @@ class CollaboratorPart extends Component<Props, State> {
       managerEmail: "",
       modalType: "",
       managerEmails: [],
-      emailError: null,
+      emailError: undefined,
     };
   }
 
   async componentDidMount(): Promise<void> {
     const { collaborator } = this.props;
-
     try {
       const savedDatesArray = await getSavedDates(collaborator);
       const managerEmails = await getManagerEmails();
@@ -89,7 +87,6 @@ class CollaboratorPart extends Component<Props, State> {
         selectedDates,
         managerEmails: managerEmails.map((item) => item.email),
       });
-      console.log("voila hadu li recuperna :", savedDatesMap);
     } catch (error) {
       console.error("Erreur lors du chargement des données :", error);
     }
@@ -189,7 +186,7 @@ class CollaboratorPart extends Component<Props, State> {
       return;
     }
 
-    this.setState({ emailError: null });
+    this.setState({ emailError: undefined });
 
     const updateSuccess = await updateDatesWithManager(
       this.props.collaborator,
@@ -276,10 +273,12 @@ class CollaboratorPart extends Component<Props, State> {
   handleEmailChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
     this.setState({
       managerEmail: event.target.value,
-      emailError: null,
+      emailError: undefined,
     });
   };
-
+  handleRedirect = (): void => {
+    window.location.href = "/sites/communicationtools";//on doit remplacer ca par le lien de notre page 1
+  };
   render(): JSX.Element {
     const { currentMonth, selectedDates, tooltipMessages, managerEmail } =
       this.state;
@@ -288,47 +287,52 @@ class CollaboratorPart extends Component<Props, State> {
 
     return (
       <div>
-        <div
+         <div
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          width: '100%', 
+          position: 'relative', 
+        }}
+      >
+        <Typography
+          variant="h4"
+          className={styles.customTitle}
           style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
+            color: '#118ec5',
+            padding: '8px',
+            borderRadius: '8px',
+            textAlign: 'center',
+            flex: 1,
+            position: 'absolute', 
+            left: 0,
+            right: 0,
+            margin: '0 auto',
           }}
         >
-          <div style={{ textAlign: "center", flex: 1 }}>
-            <Typography
-              variant="h4"
-              className={styles.customTitle}
+          Planning de Télétravail
+        </Typography>
+        <div style={{ position: 'relative', marginLeft: 'auto', marginRight: '16px' }}>
+          <Tooltip
+            title={
+              <span style={{ fontSize: '18px' }}>
+                Enregistrer le calendrier
+              </span>
+            }
+            arrow
+          >
+            <EventAvailableIcon
+              onClick={() => this.handleSave('')}
               style={{
-                color: "#FFF",
-                padding: "8px",
-                borderRadius: "8px",
-                display: "inline-block",
+                cursor: 'pointer',
+                color: '#118ec5',
+                fontSize: '45px',
               }}
-            >
-              Planning de Télétravail
-            </Typography>
-          </div>
-          <div style={{ marginLeft: "auto", marginRight: "16px" }}>
-            <Tooltip
-              title={
-                <span style={{ fontSize: "18px" }}>
-                  Enregistrer le calendrier
-                </span>
-              }
-              arrow
-            >
-              <EventAvailableIcon
-                onClick={() => this.handleSave("")}
-                style={{
-                  cursor: "pointer",
-                  color: "#2e7cb3",
-                  fontSize: "45px",
-                }}
-              />
-            </Tooltip>
-          </div>
+            />
+          </Tooltip>
         </div>
+      </div>
 
         <div className={styles.naviDate}>
           <IconButton
@@ -424,7 +428,7 @@ class CollaboratorPart extends Component<Props, State> {
                           />
                           {status === "Rejeté" && tooltipMessages[dateStr] && (
                             <Tooltip
-                              title={tooltipMessages[dateStr]} // Tooltip spécifique à chaque jour
+                              title={tooltipMessages[dateStr]} 
                               placement="top"
                               arrow
                             >
@@ -448,7 +452,7 @@ class CollaboratorPart extends Component<Props, State> {
         <div style={{ position: "relative", marginBottom: "20px" }}>
           {/* Message d'erreur */}
           {this.state.emailError && (
-            <div style={{ color: "red", marginBottom: "8px" }}>
+            <div style={{ color: "red", marginBottom: "8px",fontSize: "14px" }}>
               {this.state.emailError}
             </div>
           )}

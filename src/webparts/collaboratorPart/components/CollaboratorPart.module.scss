@@ -1,5 +1,5 @@
 * {
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif !important;
+  font-family: Radical, Arial, sans-serif !important;
 }
 
 .calendarTable {
@@ -10,7 +10,7 @@
   }
  
   .weekday {
-    background-color: #047bb3;
+    background-color: #118ec5;
     position: relative;
     text-align: center !important;
     padding: 10px 0;
@@ -23,7 +23,7 @@
   .calendarDay {
     height: 70px; 
     text-align: center  !important;
-    padding: 40px 0; /* Augmente la hauteur des cases */
+    padding: 40px 0; 
     border: 1px solid #dee2e6;
     cursor: pointer;
     position: relative;
@@ -31,12 +31,12 @@
   }
   
   .calendarDay.otherMonth {
-    background-color: #f8f9fa;
+    background-color: #f6f6f7;
     cursor: default;
   }
   
   .date {
-    font-size: 20px;
+    font-size: 18px;
     display: inline-block  !important;
   }
   
@@ -71,7 +71,7 @@
     font-weight: bold !important;
   }
   .outsideMonth {
-    background-color: rgb(201, 201, 201);
+    background-color: #B6BBC4;
     cursor: pointer;
   }
   
@@ -220,10 +220,10 @@
 .customTitle{
     font-size: 3rem; 
     font-weight: 700 !important;
-    color: #2380ba  !important;
+    color: #118ec5  !important;
   }
   .customMonth{
-    color :#2380ba;
+    color :#118ec5;
     margin-bottom: 30px;
 
   }
