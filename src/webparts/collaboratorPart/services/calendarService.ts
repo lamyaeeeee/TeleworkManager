@@ -8,7 +8,6 @@ const getCollaboratorId = async (collaboratorName: string): Promise<number> => {
     const users = await sp.web.siteUsers
       .filter(`Title eq '${collaboratorName}'`)
       .get();
-      console.log("voila lid de collab:",users[0].Id );
     return users.length > 0 ? users[0].Id : 0;
   } catch (error) {
     console.error(
@@ -18,9 +17,29 @@ const getCollaboratorId = async (collaboratorName: string): Promise<number> => {
     return 0;
   }
 };
+const getManagerIdByEmail = async (managerEmail: string): Promise<number> => {
+  try {
+    const users = await sp.web.siteUsers
+      .filter(`Email eq '${managerEmail}'`)
+      .get();
+
+    if (users.length > 0) {
+      return users[0].Id;
+    } else {
+      console.warn("Aucun utilisateur trouvé avec cet email");
+      return 0;
+    }
+  } catch (error) {
+    console.error(
+      "Erreur lors de la récupération de l'ID du manager",
+      error
+    );
+    return 0;
+  }
+};
 
 const convertToLocalDate = (date: string): string => {
-  // Conversion de date locale pour eviter le prob rencontré de jour moins d'un jour
+  // Conversion de date locale pour eviter le prob que j'ai rencontré de jour moins d'aujourdhui
   return moment(date).format("YYYY-MM-DDTHH:mm:ss.SSS");
 };
 
@@ -36,11 +55,11 @@ const checkDateExists = async (
     .get();
   return response.length > 0;
 };
-
-export const saveDate = async  (title :string, collaborator: string, date: string, status: string): Promise<boolean> => {
+export const saveDate = async (title: string, collaborator: string, date: string, status: string, manager: string): Promise<boolean> => {
   try {
     const formattedDate = convertToLocalDate(date);
     const collaboratorId = await getCollaboratorId(collaborator);
+    const ManagerId = manager ? await getManagerIdByEmail(manager) : null;
 
     if (collaboratorId === 0) {
       throw new Error("Collaborateur non trouvé");
@@ -48,16 +67,19 @@ export const saveDate = async  (title :string, collaborator: string, date: strin
 
     const dateExists = await checkDateExists(collaboratorId, formattedDate);
     if (dateExists) {
-      console.log("La date existe déjà pour ce collaborateur.");
       return false;
     }
 
-    const itemData = {
+    const itemData: any = {
       Title: title,
       CollaborateurId: collaboratorId,
       Date: formattedDate,
       Statut: status,
     };
+
+    if (ManagerId) {
+      itemData.ManagerId = ManagerId;
+    }
 
     await sp.web.lists.getByTitle(listName).items.add(itemData);
 
@@ -76,6 +98,7 @@ export const saveDate = async  (title :string, collaborator: string, date: strin
     return false;
   }
 };
+
 
 export const deleteDate =async (date: string, collaborator: string): Promise<boolean> => {
   try {
@@ -119,7 +142,7 @@ export const deleteDate =async (date: string, collaborator: string): Promise<boo
   }
 };
 
-export const getSavedDates = async (collaborator: string): Promise<{ date: string; status: string }[]> => {
+export const getSavedDates = async (collaborator: string): Promise<{ date: string; status: string; manager: string | undefined, hasManager: boolean, motif?: string }[]> => {
   try {
     const collaboratorId = await getCollaboratorId(collaborator);
     if (collaboratorId === 0) {
@@ -131,9 +154,72 @@ export const getSavedDates = async (collaborator: string): Promise<{ date: strin
       .items.filter(`CollaborateurId eq ${collaboratorId}`)
       .get();
 
-    return items.map((item) => ({ date: item.Date, status: item.Statut }));
+    return items.map((item) => ({
+      date: item.Date,
+      status: item.Statut,
+      manager: item.ManagerStringId || null,
+      hasManager: !!item.ManagerStringId,
+      motif: item.Motif || ""  
+    }));
   } catch (error) {
     console.error("Erreur lors de la récupération des dates enregistrées", error);
     return [];
   }
 };
+
+
+const emailListName = "manager";
+
+export const getManagerEmails = async (): Promise<{ nom: string; email: string }[]> => {
+  try {
+   
+    const items = await sp.web.lists.getByTitle(emailListName).items.select("Nom", "email").get();
+
+    const managers = items.map(item => ({
+      nom: item.Nom,
+      email: item.email,
+    }));
+
+    return managers;
+  } catch (error) {
+    console.error("Erreur lors de la récupération des emails des managers", error);
+    return [];
+  }
+};
+
+export const updateDatesWithManager = async (collaborator: string, managerEmail: string): Promise<boolean> => {
+  try {
+    const collaboratorId = await getCollaboratorId(collaborator);
+    const managerId = await getManagerIdByEmail(managerEmail);
+    if (collaboratorId === 0) {
+      throw new Error("Collaborateur non trouvé");
+    }
+    if (managerId === 0) {
+      throw new Error("Manager non trouvé");
+    }
+
+    const items = await sp.web.lists
+      .getByTitle(listName)
+      .items.filter(`CollaborateurId eq ${collaboratorId} and ManagerId eq null`)
+      .get();
+
+    if (items.length === 0) {
+      console.log("Aucune date en attente pour le collaborateur");
+      return true;
+    }
+
+    for (const item of items) {
+      await sp.web.lists
+        .getByTitle(listName)
+        .items.getById(item.Id)
+        .update({ ManagerId: managerId });
+    }
+
+    console.log("Mise à jour des dates avec le manager réussie");
+    return true;
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour des dates avec le manager", error);
+    return false;
+  }
+};
+

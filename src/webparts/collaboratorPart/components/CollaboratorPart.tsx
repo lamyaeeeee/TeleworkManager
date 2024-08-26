@@ -16,31 +16,31 @@ import {
   IconButton,
   Typography,
   Tooltip,
+  TextField,
+  InputAdornment,
 } from "@mui/material";
-import SaveIcon from "@mui/icons-material/Save";
+import SendIcon from "@mui/icons-material/Send";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import styles from "./CollaboratorPart.module.scss";
-import { formatDate, getDaysInMonth } from "../../../services/dateService";
+import { formatDate, getDaysInMonth } from "../services/dateService";
 import {
   saveDate,
   deleteDate,
   getSavedDates,
-} from "../../../services/calendarService";
-
-interface Props {
-  sp: any;
-  collaborator: string;
-}
-
-interface State {
-  selectedDates: Set<string>;
-  deletedDates: Set<string>;
-  currentMonth: moment.Moment;
-  savedDates: Map<string, string>;
-  showModal: boolean;
-  tooltipMessage: string;
-}
+  getManagerEmails,
+  updateDatesWithManager,
+} from "../services/calendarService";
+import {
+  sendTeleworkRequest,
+  getCollaboratorEmail,
+} from "../services/emailService";
+import EventAvailableIcon from "@mui/icons-material/EventAvailable";
+import Autocomplete from "@mui/material/Autocomplete";
+import { SavedDate } from "../models/SavedDate";
+import { Props } from "../models/Props";
+import { State } from "../models/State";
+import { TeleworkRequest } from "../models/TeleworkRquest";
 
 class CollaboratorPart extends Component<Props, State> {
   constructor(props: Props) {
@@ -49,68 +49,87 @@ class CollaboratorPart extends Component<Props, State> {
       selectedDates: new Set(),
       deletedDates: new Set(),
       currentMonth: moment().startOf("month"),
-      savedDates: new Map(),
+      savedDates: new Map<string, SavedDate>(),
       showModal: false,
-      tooltipMessage: "",
+      tooltipMessages: {},
+      managerEmail: "",
+      modalType: "",
+      managerEmails: [],
+      emailError: undefined,
     };
   }
 
   async componentDidMount(): Promise<void> {
     const { collaborator } = this.props;
-    const savedDatesArray = await getSavedDates(collaborator);
-    console.log("collaborateur : ",this.props);
-    console.log("dates ar : ", savedDatesArray );
-    const savedDatesMap = new Map(
-      savedDatesArray.map((item) => [formatDate(item.date), item.status])
-    );
-  
-    const selectedDates = new Set(
-      [...savedDatesMap.entries()]
-        .filter(([date, status]) => status === "En attente")
-        .map(([date]) => date)
-    );
-  
-    this.setState({
-      savedDates: savedDatesMap,
-      selectedDates,
-    });
-  }  
-  
+    try {
+      const savedDatesArray = await getSavedDates(collaborator);
+      const managerEmails = await getManagerEmails();
+
+      const savedDatesMap = new Map<string, SavedDate>(
+        savedDatesArray.map((item) => [
+          formatDate(item.date),
+          {
+            status: item.status,
+            hasManager: item.hasManager,
+            motif: item.motif,
+          },
+        ])
+      );
+
+      const selectedDates = new Set(
+        [...savedDatesMap.entries()]
+          .filter(([_, dateData]) => dateData.status === "En attente")
+          .map(([date]) => date)
+      );
+
+      this.setState({
+        savedDates: savedDatesMap,
+        selectedDates,
+        managerEmails: managerEmails.map((item) => item.email),
+      });
+    } catch (error) {
+      console.error("Erreur lors du chargement des données :", error);
+    }
+  }
 
   handleDateClick = (date: string): void => {
     const dayOfWeek = moment(date).day();
     const isPastDate = moment(date).isBefore(moment(), "day");
-    const status = this.state.savedDates.get(date);
+    const status = this.state.savedDates.get(date)?.status;
 
     if (dayOfWeek === 0 || dayOfWeek === 6 || isPastDate) return;
 
     this.setState((prevState) => {
       const { selectedDates, deletedDates, savedDates } = prevState;
 
-      if (selectedDates.has(date)) {
-        selectedDates.delete(date);
-        deletedDates.add(date);
+      const newSelectedDates = new Set(selectedDates);
+      const newDeletedDates = new Set(deletedDates);
+      const newSavedDates = new Map(savedDates);
+
+      if (newSelectedDates.has(date)) {
+        newSelectedDates.delete(date);
+        newDeletedDates.add(date);
       } else if (status === "En attente") {
-        selectedDates.delete(date);
-        deletedDates.add(date);
-        savedDates.delete(date);
+        newSelectedDates.delete(date);
+        newDeletedDates.add(date);
+        newSavedDates.delete(date);
       } else if (status === "Approuvé") {
-        savedDates.delete(date);
-        deletedDates.add(date);
+        newSavedDates.delete(date);
+        newDeletedDates.add(date);
       } else {
-        selectedDates.add(date);
-        deletedDates.delete(date);
+        newSelectedDates.add(date);
+        newDeletedDates.delete(date);
       }
 
       return {
-        selectedDates: new Set(selectedDates),
-        deletedDates: new Set(deletedDates),
-        savedDates: new Map(savedDates),
+        selectedDates: newSelectedDates,
+        deletedDates: newDeletedDates,
+        savedDates: newSavedDates,
       };
     });
   };
 
-  handleSave = async (): Promise<void> => {
+  handleSave = async (manager: string): Promise<void> => {
     const { collaborator } = this.props;
     const { selectedDates, deletedDates } = this.state;
 
@@ -119,30 +138,93 @@ class CollaboratorPart extends Component<Props, State> {
         `Demande de ${collaborator}`,
         collaborator,
         date,
-        "En attente"
+        "En attente",
+        manager
       );
       if (!saveSuccess) {
-        console.log(`La date ${date} existe déjà pour ${collaborator}.`);
+        //    console.log(`La date ${date} existe déjà pour ${collaborator}.`);
       }
     }
 
     const savedDatesFormatted = Array.from(selectedDates).map((date) =>
       formatDate(date)
     );
-    this.setState((prevState) => ({
-      savedDates: new Map([
-        ...prevState.savedDates,
-        ...savedDatesFormatted.map(
-          (date) => [date, "En attente"] as [string, string]
-        ),
-      ]),
-    }));
+    this.setState((prevState) => {
+      if (!(prevState.savedDates instanceof Map)) {
+        console.error("savedDates n'est pas une instance de Map.");
+        return null;
+      }
+
+      const updatedSavedDates = new Map(prevState.savedDates);
+
+      const defaultSavedDate: SavedDate = {
+        status: "En attente",
+        hasManager: false,
+      };
+
+      savedDatesFormatted.forEach((date) => {
+        updatedSavedDates.set(date, defaultSavedDate);
+      });
+
+      return {
+        savedDates: updatedSavedDates,
+      };
+    });
 
     for (const date of deletedDates) {
       await deleteDate(date, collaborator);
     }
 
-    this.setState({ deletedDates: new Set(), showModal: true });
+    this.setState({ deletedDates: new Set(), modalType: "save" });
+  };
+
+  handleSendRequest = async (): Promise<void> => {
+    const { managerEmail, selectedDates, managerEmails } = this.state;
+
+    if (!managerEmails.includes(managerEmail)) {
+      this.setState({ emailError: "L'email du manager n'est pas valide." });
+      return;
+    }
+
+    this.setState({ emailError: undefined });
+
+    const updateSuccess = await updateDatesWithManager(
+      this.props.collaborator,
+      managerEmail
+    );
+    if (!updateSuccess) {
+      console.error("Échec de la mise à jour des dates avec le manager.");
+      return;
+    }
+
+    await this.handleSave(managerEmail);
+
+    const { collaborator, spHttpClient, siteUrl } = this.props;
+    const collaboratorEmail = await getCollaboratorEmail(collaborator);
+
+    if (!collaboratorEmail) {
+      console.error("Impossible de récupérer l'email du collaborateur.");
+      return;
+    }
+
+    const teleworkRequest: TeleworkRequest = {
+      collaborator,
+      dates: Array.from(selectedDates),
+      managerEmail,
+      collaboratorEmail,
+    };
+
+    const sendSuccess = await sendTeleworkRequest(
+      spHttpClient,
+      siteUrl,
+      teleworkRequest
+    );
+
+    if (sendSuccess) {
+      this.setState({ modalType: "send" });
+    } else {
+      console.error("Échec de l'envoi de la demande.");
+    }
   };
 
   handlePrevMonth = (): void => {
@@ -161,64 +243,124 @@ class CollaboratorPart extends Component<Props, State> {
     const newMonth = moment(date).startOf("month");
     this.setState({ currentMonth: newMonth });
   };
-  
+
   handleCloseModal = (): void => {
-    this.setState({ showModal: false });
+    this.setState({ showModal: false, modalType: "" });
   };
 
   handleMouseOver = (date: string): void => {
-    const status = this.state.savedDates.get(date);
-    if (status === "Rejeté") {
-      this.setState({
-        tooltipMessage: `Commentaire pour ${date}: Exemple de commentaire `,
-      });
+    const savedDate = this.state.savedDates.get(date);
+
+    if (savedDate && savedDate.status === "Rejeté" && savedDate.motif) {
+      this.setState((prevState) => ({
+        tooltipMessages: {
+          ...prevState.tooltipMessages,
+          [date]: `Motif du refus pour ${date}: ${savedDate.motif}`,
+        },
+      }));
     }
   };
-  
 
-  handleMouseOut = () :void=> {
-    this.setState({ tooltipMessage: "" });
+  handleMouseOut = (date: string): void => {
+    this.setState((prevState) => ({
+      tooltipMessages: {
+        ...prevState.tooltipMessages,
+        [date]: "",
+      },
+    }));
   };
 
+  handleEmailChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
+    this.setState({
+      managerEmail: event.target.value,
+      emailError: undefined,
+    });
+  };
+  handleRedirect = (): void => {
+    window.location.href = "/sites/communicationtools";//on doit remplacer ca par le lien de notre page 1
+  };
   render(): JSX.Element {
-    const { collaborator } = this.props;
-    const {
-      currentMonth,
-      selectedDates,
-      savedDates,
-      showModal,
-      tooltipMessage,
-    } = this.state;
+    const { currentMonth, selectedDates, tooltipMessages, managerEmail } =
+      this.state;
     const days = getDaysInMonth(currentMonth);
     const weekdays = ["Lun", "Mar", "Mer", "Jeu", "Ven"];
 
     return (
       <div>
-        <Typography variant="h4" align="center" gutterBottom>
-          Calendrier de Télétravail
+         <div
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          width: '100%', 
+          position: 'relative', 
+        }}
+      >
+        <Typography
+          variant="h4"
+          className={styles.customTitle}
+          style={{
+            color: '#118ec5',
+            padding: '8px',
+            borderRadius: '8px',
+            textAlign: 'center',
+            flex: 1,
+            position: 'absolute', 
+            left: 0,
+            right: 0,
+            margin: '0 auto',
+          }}
+        >
+          Planning de Télétravail
         </Typography>
-        <Typography variant="body1" align="center" gutterBottom>
-  Bonjour {collaborator}, veuillez sélectionner les jours de télétravail souhaités et cliquer sur &quot;Enregistrer&quot; pour soumettre votre demande de télétravail.
-</Typography>
+        <div style={{ position: 'relative', marginLeft: 'auto', marginRight: '16px' }}>
+          <Tooltip
+            title={
+              <span style={{ fontSize: '18px' }}>
+                Enregistrer le calendrier
+              </span>
+            }
+            arrow
+          >
+            <EventAvailableIcon
+              onClick={() => this.handleSave('')}
+              style={{
+                cursor: 'pointer',
+                color: '#118ec5',
+                fontSize: '45px',
+              }}
+            />
+          </Tooltip>
+        </div>
+      </div>
+
         <div className={styles.naviDate}>
           <IconButton
             onClick={this.handlePrevMonth}
-            className="customIconButton"
+            className={styles.customIconButton}
           >
             <ArrowBackIcon />
           </IconButton>
-          <Typography variant="h5">
+
+          <Typography variant="h4" className={styles.customMonth}>
             {currentMonth.format("MMMM YYYY")}
           </Typography>
+
           <IconButton
             onClick={this.handleNextMonth}
-            className="customIconButton"
+            className={styles.customIconButton}
           >
             <ArrowForwardIcon />
           </IconButton>
         </div>
 
-        <TableContainer>
+        <TableContainer
+          style={{
+            borderRadius: "8px",
+            overflow: "hidden",
+            boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
+          }}
+        >
           <Table>
             <TableHead>
               <TableRow>
@@ -237,14 +379,20 @@ class CollaboratorPart extends Component<Props, State> {
                     {days.slice(rowIndex * 5, (rowIndex + 1) * 5).map((day) => {
                       const dateStr = day.date.format("YYYY-MM-DD");
                       const isSelected = selectedDates.has(dateStr);
-                      const status = savedDates.get(dateStr) || "";
-
                       const isToday = moment().isSame(day.date, "day");
                       const isPastDate = moment(dateStr).isBefore(
                         moment(),
                         "day"
                       );
                       const isCurrentMonth = day.isCurrentMonth;
+                      const { status, hasManager } =
+                        this.state.savedDates.get(dateStr) || {};
+                      const statusClass =
+                        status === "En attente"
+                          ? hasManager
+                            ? styles.done
+                            : styles.selected
+                          : "";
 
                       return (
                         <TableCell
@@ -253,7 +401,7 @@ class CollaboratorPart extends Component<Props, State> {
                             isToday ? styles.today : ""
                           } ${isPastDate ? styles.pastDate : ""} ${
                             isSelected ? styles.selected : ""
-                          } ${status === "En attente" ? styles.pending : ""} ${
+                          } ${statusClass} ${
                             !isCurrentMonth ? styles.otherMonth : ""
                           } ${status === "Approuvé" ? styles.approved : ""} ${
                             status === "Rejeté" ? styles.rejected : ""
@@ -266,7 +414,7 @@ class CollaboratorPart extends Component<Props, State> {
                             }
                           }}
                           onMouseOver={() => this.handleMouseOver(dateStr)}
-                          onMouseOut={() => this.handleMouseOut()}
+                          onMouseOut={() => this.handleMouseOut(dateStr)}
                         >
                           <div className={styles.date}>{day.date.date()}</div>
                           <div
@@ -278,10 +426,14 @@ class CollaboratorPart extends Component<Props, State> {
                               status === "Rejeté" ? styles.rejectedCircle : ""
                             }`}
                           />
-                          {status === "Rejeté" && tooltipMessage && (
-                            <Tooltip title={tooltipMessage}>
+                          {status === "Rejeté" && tooltipMessages[dateStr] && (
+                            <Tooltip
+                              title={tooltipMessages[dateStr]} 
+                              placement="top"
+                              arrow
+                            >
                               <div className={styles.tooltip}>
-                                {tooltipMessage}
+                                {tooltipMessages[dateStr]}
                               </div>
                             </Tooltip>
                           )}
@@ -295,41 +447,107 @@ class CollaboratorPart extends Component<Props, State> {
           </Table>
         </TableContainer>
         <br />
-        <div className={styles.legend}>
+
+        <br />
+        <div style={{ position: "relative", marginBottom: "20px" }}>
+          {/* Message d'erreur */}
+          {this.state.emailError && (
+            <div style={{ color: "red", marginBottom: "8px",fontSize: "14px" }}>
+              {this.state.emailError}
+            </div>
+          )}
+
           <div
-            className={styles.legendBox}
-            style={{ backgroundColor: "#2e7cb3 " }}
-            />
-          <span>En attente</span>
-          <div
-            className={styles.legendBox}
-            style={{ backgroundColor: "#6daa69" }}
-            />
-          <span>Approuvé</span>
-          <div
-            className={styles.legendBox}
-            style={{ backgroundColor: "#ED2B2A" }}
-          />
-          <span>Rejeté</span>
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <div style={{ flex: 1 }}>
+              <Autocomplete
+                options={this.state.managerEmails}
+                getOptionLabel={(option) => option}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Sélectionner le manager"
+                    variant="outlined"
+                    fullWidth
+                    value={managerEmail}
+                    onChange={this.handleEmailChange}
+                    InputProps={{
+                      ...params.InputProps,
+                      style: { fontSize: "18px" },
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <Tooltip
+                            title={
+                              <span style={{ fontSize: "18px" }}>
+                                Envoyer la demande au manager
+                              </span>
+                            }
+                            arrow
+                          >
+                            <IconButton
+                              onClick={this.handleSendRequest}
+                              disabled={!managerEmail}
+                              edge="end"
+                              style={{ padding: 0 }}
+                            >
+                              <SendIcon
+                                style={{
+                                  color: this.state.emailError
+                                    ? "red"
+                                    : managerEmail
+                                    ? "#3f51b5"
+                                    : "grey",
+                                  fontSize: "30px",
+                                }}
+                              />
+                            </IconButton>
+                          </Tooltip>
+                        </InputAdornment>
+                      ),
+                    }}
+                    InputLabelProps={{
+                      style: { fontSize: "18px" },
+                    }}
+                    error={!!this.state.emailError}
+                    helperText={null}
+                  />
+                )}
+                renderOption={(props, option) => (
+                  <li {...props} style={{ fontSize: "18px" }}>
+                    {option}
+                  </li>
+                )}
+                value={managerEmail}
+                onChange={(event, newValue) => {
+                  this.setState({ managerEmail: newValue || "" });
+                }}
+              />
+            </div>
+          </div>
         </div>
-        <Button
-          startIcon={<SaveIcon />}
-          onClick={this.handleSave}
-          variant="contained"
-          style={{ backgroundColor: "#2e7cb3", color: "#fff" }}
+
+        <div
+          style={{ width: "100%", height: "70px", backgroundColor: "white" }}
         >
-          Enregistrer
-        </Button>
-        <Dialog open={showModal} onClose={this.handleCloseModal}>
+          {/* juste pour l'affichage */}
+        </div>
+        <Dialog open={!!this.state.modalType} onClose={this.handleCloseModal}>
           <DialogTitle>Confirmation</DialogTitle>
           <DialogContent>
             <DialogContentText>
-              Les dates sélectionnées ont été enregistrées avec succès !
+              {this.state.modalType === "save"
+                ? "Les dates ont été enregistrées avec succès."
+                : "Votre demande a été envoyée au manager."}
             </DialogContentText>
           </DialogContent>
           <DialogActions>
             <Button onClick={this.handleCloseModal} color="primary">
-              OK
+              Fermer
             </Button>
           </DialogActions>
         </Dialog>

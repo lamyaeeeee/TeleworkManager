@@ -1,25 +1,24 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/spfx/client-side-web-part-manifest.schema.json",
-  "id": "72d9b1ea-4cde-4968-9772-632047dc21fd",
-  "alias": "CollaboratorPartWebPart",
+  "id": "21ec5116-c241-4279-bc9b-1c440091cf4e",
+  "alias": "ManagerPartWebPart",
   "componentType": "WebPart",
 
   "version": "*",
   "manifestVersion": 2,
 
   "requiresCustomScript": false,
-  "supportsFullBleed": true,
   "supportedHosts": ["SharePointWebPart", "TeamsPersonalApp", "TeamsTab", "SharePointFullPage"],
   "supportsThemeVariants": true,
 
   "preconfiguredEntries": [{
-    "groupId": "5c03119e-3074-46fd-976b-c60198311f70", 
+    "groupId": "5c03119e-3074-46fd-976b-c60198311f70",
     "group": { "default": "Advanced" },
-    "title": { "default": "collaboratorPart" },
-    "description": { "default": "collaboratorPart description" },
+    "title": { "default": "ManagerPart" },
+    "description": { "default": "ManagerPart description" },
     "officeFabricIconFontName": "Page",
     "properties": {
-      "description": "collaboratorPart"
+      "description": "ManagerPart"
     }
   }]
 }

@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "engines": {
-   "node": "18.17.1",
+    "node": "18.17.1",
     "npm": "9.6.7"
   },
   "main": "lib/index.js",
@@ -29,11 +29,13 @@
     "@pnp/sp": "^2.15.0",
     "bootstrap": "^5.3.3",
     "moment": "^2.30.1",
-    "react": "^17.0.1",
+    "react": "17.0.1",
     "react-big-calendar": "^1.13.1",
     "react-bootstrap": "^2.10.4",
     "react-calendar": "^5.0.0",
-    "react-dom": "^17.0.1",
+    "react-dom": "17.0.1",
+    "react-router-dom": "^6.26.0",
+    "recharts": "^2.12.7",
     "tslib": "2.3.1"
   },
   "devDependencies": {
