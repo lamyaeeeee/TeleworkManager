@@ -8,23 +8,23 @@ import {
 import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
 import { IReadonlyTheme } from '@microsoft/sp-component-base';
 
-import * as strings from 'ManagerPartWebPartStrings';
-import ManagerPart from './components/ManagerPart';
-import { IManagerPartProps } from './components/IManagerPartProps';
+import * as strings from 'TeletravailWebPartStrings';
+import Teletravail from './components/Teletravail';
+import { ITeletravailProps } from './components/ITeletravailProps';
 
-export interface ITestWebPartProps {
+export interface ITeletravailWebPartProps {
   description: string;
 }
 
-export default class TestWebPart extends BaseClientSideWebPart<ITestWebPartProps> {
+export default class TeletravailWebPart extends BaseClientSideWebPart<ITeletravailWebPartProps> {
 
   private _isDarkTheme: boolean = false;
   private _environmentMessage: string = '';
 
   public render(): void {
-    const element: React.ReactElement< IManagerPartProps> = React.createElement(
-      ManagerPart,
-      { context: this.context,
+    const element: React.ReactElement<ITeletravailProps> = React.createElement(
+      Teletravail,
+      {
         description: this.properties.description,
         isDarkTheme: this._isDarkTheme,
         environmentMessage: this._environmentMessage,

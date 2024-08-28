@@ -17,11 +17,22 @@
           "manifest": "./src/webparts/managerPart/ManagerPartWebPart.manifest.json"
         }
       ]
+    },
+    "teletravail-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/teletravail/TeletravailWebPart.js",
+          "manifest": "./src/webparts/teletravail/TeletravailWebPart.manifest.json"
+        }
+      ]
     }
+   
   },
   "externals": {},
   "localizedResources": {
     "CollaboratorPartWebPartStrings": "lib/webparts/collaboratorPart/loc/{locale}.js",
-    "ManagerPartWebPartStrings": "lib/webparts/managerPart/loc/{locale}.js"
+    "ManagerPartWebPartStrings": "lib/webparts/managerPart/loc/{locale}.js",
+    "TeletravailWebPartStrings": "lib/webparts/teletravail/loc/{locale}.js"
+
   }
 }

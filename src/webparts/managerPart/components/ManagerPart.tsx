@@ -6,14 +6,14 @@ import {
   getCollaboratorsByManager,
   getSavedDates,
   updateDatesWithManager,
-} from "../services/managerService";
+} from "../../../services/managerService";
 import styles from "./ManagerPart.module.scss";
-import { getDaysInMonth } from "../../collaboratorPart/services/dateService";
-import { getManagerEmails } from "../../collaboratorPart/services/calendarService";
+import { getDaysInMonth } from "../../../services/dateService";
+import { getManagerEmails } from "../../../services/calendarService";
 import {
   getCollaboratorEmail,
   sendUpdateNotification,
-} from "../../collaboratorPart/services/emailService";
+} from "../../../services/emailService";
 import {
   TableContainer,
   Table,
@@ -42,15 +42,39 @@ import Paper from "@mui/material/Paper";
 
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import { Props } from "../models/Props";
-import { State } from "../models/State";
+import { ManagerState, CollaboratorItem } from "../../../models/ManagerState";
+import {BarClickData} from "../../../models/BarClickData";
+
 type Status = "Approuvé" | "Rejeté" | "En attente";
 import { sp } from "@pnp/sp/presets/all";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import CircularProgress from "@mui/material/CircularProgress";
-import { AjouterButton ,AnnulerButton} from './button'; 
-class ManagerPart extends React.Component<Props, State> {
-  constructor(props: Props) {
+import { AjouterButton, AnnulerButton } from "./button";
+//
+import Box from "@mui/material/Box";
+import Accordion from "@mui/material/Accordion";
+import AccordionSummary from "@mui/material/AccordionSummary";
+import AccordionDetails from "@mui/material/AccordionDetails";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, Cell } from "recharts";
+import { getListItems } from "../../../services/ChartsServices";
+import FormControl from "@mui/material/FormControl";
+import InputLabel from "@mui/material/InputLabel";
+import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
+import { SelectChangeEvent } from "@mui/material/Select";
+import EventAvailableIcon from "@mui/icons-material/EventAvailable";
+import CancelIcon from "@mui/icons-material/Cancel";
+import { IManagerPartProps } from "./IManagerPartProps";
+import "@pnp/sp/webs";
+import "@pnp/sp/lists";
+import "@pnp/sp/items";
+type HandleChangeFunction = (
+  event: React.SyntheticEvent,
+  isExpanded: boolean
+) => void;
+class ManagerPart extends React.Component<IManagerPartProps, ManagerState> {
+  constructor(props: IManagerPartProps) {
     super(props);
     this.state = {
       collaborators: [],
@@ -71,13 +95,23 @@ class ManagerPart extends React.Component<Props, State> {
       openDialogCollab: false,
       isManager: false,
       loading: true,
+      collaboratorss: [],
+      manager: "",
+      filter: "semaine",
+      expanded: "",
     };
   }
 
   async componentDidMount(): Promise<void> {
-    const { manager } = this.props;
+    sp.setup({
+      sp: {
+        baseUrl: "https://ibsugoy.sharepoint.com/sites/communicationtools",
+      },
+    });
+    const manager = this.props.context.pageContext.user.displayName;
     const user = await sp.web.currentUser.get();
     const userEmail = user.Email;
+    await this.fetchAllCollaborators();
     try {
       const managers = await getManagerEmails();
       const isManager = managers.some((manager) => manager.email === userEmail);
@@ -100,7 +134,10 @@ class ManagerPart extends React.Component<Props, State> {
     }
   }
 
-  async componentDidUpdate(prevProps: Props, prevState: State): Promise<void> {
+  async componentDidUpdate(
+    prevProps: IManagerPartProps,
+    prevState: ManagerState
+  ): Promise<void> {
     if (prevState.selectedCollaborator !== this.state.selectedCollaborator) {
       await this.loadDates();
     }
@@ -168,7 +205,9 @@ class ManagerPart extends React.Component<Props, State> {
 
   handleSave = async (): Promise<void> => {
     const { selectedCollaborator } = this.state;
-    const { manager, spHttpClient, siteUrl } = this.props;
+    const spHttpClient = this.props.context.spHttpClient;
+    const siteUrl = this.props.context.pageContext.web.absoluteUrl;
+    const manager = this.props.context.pageContext.user.displayName;
 
     if (selectedCollaborator) {
       try {
@@ -213,7 +252,7 @@ class ManagerPart extends React.Component<Props, State> {
 
   async loadDates(): Promise<void> {
     const { selectedCollaborator } = this.state;
-    const { manager } = this.props;
+    const manager = this.props.context.pageContext.user.displayName;
     if (selectedCollaborator) {
       try {
         const dates = await getSavedDates(selectedCollaborator, manager);
@@ -262,6 +301,72 @@ class ManagerPart extends React.Component<Props, State> {
   handleRedirect = (): void => {
     window.location.href = "/sites/communicationtools"; //remplacons ca apres avec le lien de la page de redirection
   };
+  //
+  fetchAllCollaborators = async (): Promise<void> => {
+    try {
+      const manager = this.props.context.pageContext.user.displayName;
+      const items: CollaboratorItem[] = await getListItems(
+        "DemandeCollaborateur",
+        manager
+      );
+      this.setState({ collaboratorss: items });
+    } catch (error) {
+      console.error("Error fetching collaborators:", error);
+      this.setState({ collaborators: [] });
+    }
+  };
+
+  handleFilterChange = (event: SelectChangeEvent<string>): void => {
+    this.setState({ filter: event.target.value });
+  };
+
+  chartCollaborators = (
+    collaborators: CollaboratorItem[]
+  ): CollaboratorItem[] => {
+    const { filter } = this.state;
+    const now = new Date();
+
+    return collaborators.filter((collaborator) => {
+      const collaboratorDate = new Date(collaborator.Date);
+
+      if (filter === "semaine") {
+        const startOfWeek = new Date(now);
+        startOfWeek.setDate(now.getDate() - now.getDay());
+        startOfWeek.setHours(0, 0, 0, 0);
+
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 7);
+
+        return collaboratorDate >= startOfWeek && collaboratorDate < endOfWeek;
+      } else if (filter === "mois") {
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+        return (
+          collaboratorDate >= startOfMonth && collaboratorDate < endOfMonth
+        );
+      } else if (filter === "annee") {
+        const startOfYear = new Date(now.getFullYear(), 0, 1);
+        const endOfYear = new Date(now.getFullYear() + 1, 0, 1);
+
+        return collaboratorDate >= startOfYear && collaboratorDate < endOfYear;
+      }
+
+      return false;
+    });
+  };
+
+ handleBarClick = (data: BarClickData) : void  => {
+    const { name } = data;
+    const count = this.state.collaboratorss.filter(collab => collab.Statut === name).length;
+    alert(`Nombre de demandes ${name}: ${count}`);
+};
+
+  handleChange =
+    (panel: string): HandleChangeFunction =>
+    (event: React.SyntheticEvent, isExpanded: boolean): void => {
+      this.setState({ expanded: isExpanded ? panel : "" });
+    };
   render(): JSX.Element {
     const {
       currentMonth,
@@ -311,7 +416,7 @@ class ManagerPart extends React.Component<Props, State> {
           <Button
             style={{
               backgroundColor: "#047bb3",
-              borderRadius: "8px", 
+              borderRadius: "8px",
               color: "#fff",
               textTransform: "none",
               fontSize: "16px",
@@ -325,9 +430,279 @@ class ManagerPart extends React.Component<Props, State> {
         </Container>
       );
     }
+    //
+    const chartCollaborators = this.chartCollaborators(
+      this.state.collaboratorss
+    );
 
+    const statusCounts = {
+      Approuvé: 0,
+      Rejeté: 0,
+      "En attente": 0,
+    };
+
+    chartCollaborators.forEach((collaborator) => {
+      if (collaborator.Statut === "Approuvé") {
+        statusCounts.Approuvé += 1;
+      } else if (collaborator.Statut === "Rejeté") {
+        statusCounts.Rejeté += 1;
+      } else if (collaborator.Statut === "En attente") {
+        statusCounts["En attente"] += 1;
+      }
+    });
+
+    const chartData = [
+      {
+        name: "Approuvé",
+        valeur: statusCounts.Approuvé,
+        fill: "#A8D9B4",
+      },
+      {
+        name: "Rejeté",
+        valeur: statusCounts.Rejeté,
+        fill: "#FFB0A8",
+      },
+      {
+        name: "En attente",
+        valeur: statusCounts["En attente"],
+        fill: "#B3D2F5",
+      },
+    ];
+
+    const CustomLegend: React.FC = (): JSX.Element => (
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          marginTop: "20px",
+          paddingLeft: "10%",
+        }}
+      >
+        {chartData.map((entry, index) => (
+          <div
+            key={`legend-${index}`}
+            style={{ margin: "0 10px", display: "flex", alignItems: "center" }}
+          >
+            <div
+              style={{
+                width: "20px",
+                height: "20px",
+                backgroundColor: entry.fill,
+                borderRadius: "4px",
+                marginRight: "8px",
+              }}
+            />
+            <span>{entry.name}</span>
+          </div>
+        ))}
+      </div>
+    );
+    const backgroundImage1 = `${require("../assets/guidelines.png")}?w=50&h=50&fit=crop&auto=format`;
+    const backgroundImage2 = `${require("../assets/charte.png")}?w=50&h=50&fit=crop&auto=format`;
+    const backgroundImage3 = `${require("../assets/faq.png")}?w=50&h=50&fit=crop&auto=format`;
     return (
       <div>
+        <div>
+          <Box>
+            <Accordion
+              style={{
+                padding: "16px",
+                borderRadius: "10px",
+                backgroundColor: "rgb(255, 255, 255)",
+                boxShadow: "rgba(0, 0, 0, 0.08) 1px 2px 6px 4px",
+              }}
+            >
+              <AccordionSummary
+                expandIcon={<ExpandMoreIcon />}
+                aria-controls="panel1-content"
+                id="panel1-header"
+                sx={{
+                  fontSize: "1.25rem",
+                  padding: "60px 98px",
+                  backgroundImage: `url(${backgroundImage1})`,
+                  backgroundSize: "70px 70px",
+                  backgroundRepeat: "no-repeat",
+                  backgroundPosition: "15px center",
+                  height: "100px",
+                }}
+              >
+                <strong style={{ color: "#4a4b67" }}>Comment ça marche</strong>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Box display="flex" flexDirection="column" gap={2} width="100%">
+                  <Accordion
+                    expanded={this.state.expanded === "panel1"}
+                    onChange={this.handleChange("panel1")}
+                    sx={{
+                      boxShadow: "none",
+                      border: "none",
+                    }}
+                  >
+                    <AccordionSummary
+                      expandIcon={<ExpandMoreIcon />}
+                      aria-controls="panel1a-content"
+                      id="panel1a-header"
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          backgroundImage: `url(${backgroundImage2})`,
+                          backgroundSize: "contain",
+                          backgroundRepeat: "no-repeat",
+                          backgroundPosition: "0 center",
+                          height: "40px",
+                          fontSize: "18px",
+                        }}
+                      >
+                        <span style={{ paddingLeft: "50px" }}>
+                          Representation en pourcentage
+                        </span>
+                      </div>
+                    </AccordionSummary>
+                    <AccordionDetails>
+                      <div>
+                        <p
+                          style={{
+                            fontSize: "1rem",
+                            color: "#868181 ",
+                            letterSpacing: "0.00938em",
+                            lineHeight: "1.5",
+                          }}
+                        >
+                          Ce diagramme vous permet, en tant que manager,
+                          d&apos;évaluer rapidement l&apos;état des demandes de
+                          vos collaborateurs et obtenir des informations
+                          essentielles pour une gestion optimisée de votre
+                          équipe. Chaque barre reflète le nombre de demandes
+                          dans les catégories{" "}
+                          <strong> Approuvé, Rejeté, et En attente </strong>.
+                        </p>
+
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "flex-end",
+                            marginBottom: "20px",
+                          }}
+                        >
+                          <FormControl fullWidth style={{ width: "200px" }}>
+                            <InputLabel>Filter</InputLabel>
+                            <Select
+                              value={this.state.filter}
+                              onChange={this.handleFilterChange}
+                              label="Filter"
+                            >
+                              <MenuItem value="semaine">Semaine</MenuItem>
+                              <MenuItem value="mois">Mois</MenuItem>
+                              <MenuItem value="annee">Année</MenuItem>
+                            </Select>
+                          </FormControl>
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            height: "100%",
+                          }}
+                        >
+                          <BarChart width={500} height={300} data={chartData}>
+                            <XAxis dataKey="name" />
+                            <YAxis />
+                            <Tooltip />
+                            <Legend content={<CustomLegend />} />
+                            <Bar dataKey="valeur">
+                              {chartData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.fill} />
+                              ))}
+                            </Bar>
+                          </BarChart>
+                        </div>
+                      </div>
+                    </AccordionDetails>
+                  </Accordion>
+                  <Accordion
+                    expanded={this.state.expanded === "panel2"}
+                    onChange={this.handleChange("panel2")}
+                    sx={{
+                      boxShadow: "none",
+                      border: "none",
+                      "&::before": { content: "none" },
+                    }}
+                  >
+                    <AccordionSummary
+                      expandIcon={<ExpandMoreIcon />}
+                      aria-controls="panel2a-content"
+                      id="panel2a-header"
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          backgroundImage: `url(${backgroundImage3})`,
+                          backgroundSize: "contain",
+                          backgroundRepeat: "no-repeat",
+                          backgroundPosition: "0 center",
+                          height: "30px",
+                          fontSize: "18px",
+                        }}
+                      >
+                        <span style={{ paddingLeft: "50px" }}>
+                          Explications
+                        </span>
+                      </div>
+                    </AccordionSummary>
+                    <AccordionDetails>
+                      <p
+                        style={{
+                          fontSize: "1rem",
+                          color: "#868181",
+                          letterSpacing: "0.00938em",
+                          lineHeight: "1.5",
+                        }}
+                      >
+                        En cliquant sur le boutton{" "}
+                        <strong> Choisir collaborateur </strong>, vous accéderez
+                        à une liste des collaborateurs ayant soumis des demandes
+                        à votre attention. Vous pourrez sélectionner lun
+                        d&apos;eux pour consulter son calendrier de télétravail
+                        . En cliquant sur <strong> Sauvegarder </strong>, les
+                        collaborateurs seront informés de vos choix.
+                      </p>
+                      <div className={styles.container}>
+                        <div className={styles.legend}>
+                          <div className={styles.legendItem}>
+                            <span
+                              className={`${styles.label} ${styles.approvedd}`}
+                            >
+                              Demande Approuvée
+                            </span>
+                          </div>
+                          <div className={styles.legendItem}>
+                            <span
+                              className={`${styles.label} ${styles.rejectedd}`}
+                            >
+                              Demande Rejetée
+                            </span>
+                          </div>
+                          <div className={styles.legendItem}>
+                            <span
+                              className={`${styles.label} ${styles.pendingg}`}
+                            >
+                              Demande En attente
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </AccordionDetails>
+                  </Accordion>
+                </Box>
+              </AccordionDetails>
+            </Accordion>
+          </Box>
+        </div>
+
         <br />
         <div
           style={{
@@ -336,28 +711,41 @@ class ManagerPart extends React.Component<Props, State> {
             marginTop: "20px",
           }}
         >
-           <AjouterButton
-      variant="contained"
-      onClick={this.handleOpenDialogCollab}
-    >
-      Choisir collaborateur
-    </AjouterButton>
+          <AjouterButton
+            variant="contained"
+            onClick={this.handleOpenDialogCollab}
+          >
+            Choisir collaborateur
+          </AjouterButton>
         </div>
 
         <Dialog
           open={openDialogCollab}
           onClose={this.handleCloseDialogCollab}
-          maxWidth="sm"
+          maxWidth={false}
           fullWidth
           PaperProps={{
             sx: {
-              height: "400px",
-              minHeight: "300px",
+              width: "530px", 
+              maxWidth: "600px", 
+              minHeight: "500px",
+              margin: "20px auto", 
+              padding :"20px 20px",
             },
           }}
         >
-          <DialogTitle>
-            Choisir Collaborateur
+          <DialogTitle
+            sx={{
+              marginTop: "20px",
+              color: "#242424",
+              fontSize: "24px",
+              textAlign: "center",
+              fontWeight: "bold",
+              letterSpacing: "0.82px",
+              position: "relative",
+            }}
+          >
+            Choisir Collaborateur 
             <IconButton
               aria-label="close"
               onClick={this.handleCloseDialogCollab}
@@ -365,62 +753,83 @@ class ManagerPart extends React.Component<Props, State> {
                 position: "absolute",
                 right: 8,
                 top: 8,
-                color: (theme) => theme.palette.grey[500],
               }}
             >
               <CloseIcon />
             </IconButton>
           </DialogTitle>
-          <DialogContent dividers>
+          <DialogContent
+            dividers
+            sx={{
+              borderTop: 0,
+              borderBottom: 0,
+            }}
+          >
             <Typography variant="body1" gutterBottom>
               Choisissez un collaborateur parmi la liste ci-dessous pour
               visualiser et approuver les demandes de télétravail qui vous ont
               été soumises.
             </Typography>
 
-            <Autocomplete
-              freeSolo
-              options={filteredCollaborators}
-              onInputChange={this.handleInputChange}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Rechercher un collaborateur..."
-                  variant="outlined"
-                  fullWidth
-                />
-              )}
-              PaperComponent={(props) => (
-                <Paper
-                  {...props}
-                  sx={{
-                    maxHeight: collaboratorCount > 3 ? "140px" : "none",
-                    overflowY: collaboratorCount > 3 ? "auto" : "visible",
-                  }}
-                />
-              )}
-              sx={{ mt: 2 }}
-            />
+            <div>
+              <label
+                htmlFor="autocomplete-input"
+                style={{
+                  fontSize: "16px",            
+                  fontFamily: "Radikal, arial, sans-serif",
+                  letterSpacing: "0.82px",
+                  marginTop:"15px",
+                  marginBottom: "5px",
+                  display: "inline-block",
+                  padding: "2px 4px",
+                }}
+              >
+                Rechercher un collaborateur :
+              </label>
+              <Autocomplete
+                freeSolo
+                options={filteredCollaborators}
+                onInputChange={this.handleInputChange}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    variant="outlined"
+                    fullWidth
+                    id="autocomplete-input"
+                  />
+                )}
+                PaperComponent={(props) => (
+                  <Paper
+                    {...props}
+                    sx={{
+                      maxHeight: collaboratorCount > 3 ? "140px" : "none",
+                      overflowY: collaboratorCount > 3 ? "auto" : "visible",
+                    }}
+                  />
+                )}
+                sx={{ mt: 2 }}
+              />
+            </div>
           </DialogContent>
           <DialogActions>
-            <Button
+            <AnnulerButton
+              variant="contained"
               onClick={this.handleCloseDialogCollab}
-              color="primary"
-              variant="outlined"
+              startIcon={<CancelIcon />}
             >
               Annuler
-            </Button>
+            </AnnulerButton>
           </DialogActions>
         </Dialog>
 
         <div style={{ textAlign: "center", marginTop: "20px" }}>
           {!selectedCollaborator ? (
-            <Typography variant="h4" className={styles.customTitle}>
+            <Typography variant="h5" className={styles.customTitle}>
               Aucun collaborateur sélectionné
             </Typography>
           ) : (
             <Typography
-              variant="h4"
+              variant="h5"
               className={styles.customTitle}
               style={{
                 color: "#FFF",
@@ -441,7 +850,7 @@ class ManagerPart extends React.Component<Props, State> {
               <ArrowBackIcon />
             </IconButton>
 
-            <Typography variant="h4" className={styles.customMonth}>
+            <Typography variant="h5" className={styles.customMonth}>
               {currentMonth.format("MMMM YYYY")}
             </Typography>
 
@@ -478,11 +887,19 @@ class ManagerPart extends React.Component<Props, State> {
                         textAlign: "center",
                         padding: "20px",
                         verticalAlign: "middle",
+                        backgroundColor: "#fff",
                       }}
                     >
                       <Typography
                         variant="body1"
-                        style={{ color: "#526D82", margin: "0" }}
+                        style={{
+                          color: "#4a4b67",
+                          fontFamily: " Radikal-Bold, arial, sans-serif",
+                          margin: "0",
+                          fontSize: "18px",
+                          fontWeight: "600",
+                          letterSpacing: "0.82px",
+                        }}
                       >
                         Veuillez choisir un collaborateur pour afficher les
                         dates de télétravail.
@@ -617,24 +1034,21 @@ class ManagerPart extends React.Component<Props, State> {
 
           {selectedCollaborator && (
             <div className={styles.dialogHeader}>
-              
               <AnnulerButton
-        variant="contained"
-        onClick={this.handleCloseDialog}
-      >
-        Annuler
-      </AnnulerButton>
-
-             
-
+                variant="contained"
+                onClick={this.handleCloseDialog}
+                startIcon={<CancelIcon />}
+              >
+                Annuler
+              </AnnulerButton>
 
               <AjouterButton
-      variant="contained"
-      onClick={this.handleSave}
-    >
-      Sauvegarder
-    </AjouterButton>
-             
+                variant="contained"
+                onClick={this.handleSave}
+                startIcon={<EventAvailableIcon />}
+              >
+                Sauvegarder
+              </AjouterButton>
             </div>
           )}
         </div>
@@ -670,20 +1084,21 @@ class ManagerPart extends React.Component<Props, State> {
             />
           </DialogContent>
           <DialogActions>
-            <Button
-              onClick={this.handleSaveMotif}
-              color="primary"
+            <AjouterButton
               variant="contained"
+              onClick={this.handleSaveMotif}
+              startIcon={<EventAvailableIcon />}
             >
-              Enregistrer
-            </Button>
-            <Button
+              Sauvegarder
+            </AjouterButton>
+
+            <AnnulerButton
+              variant="contained"
               onClick={this.handleCloseDialogMotif}
-              color="secondary"
-              variant="outlined"
+              startIcon={<CancelIcon />}
             >
               Annuler
-            </Button>
+            </AnnulerButton>
           </DialogActions>
         </Dialog>
 

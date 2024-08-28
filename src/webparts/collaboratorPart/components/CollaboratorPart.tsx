@@ -23,27 +23,38 @@ import SendIcon from "@mui/icons-material/Send";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import styles from "./CollaboratorPart.module.scss";
-import { formatDate, getDaysInMonth } from "../services/dateService";
+import { formatDate, getDaysInMonth } from "../../../services/dateService";
 import {
   saveDate,
   deleteDate,
   getSavedDates,
   getManagerEmails,
   updateDatesWithManager,
-} from "../services/calendarService";
+} from "../../../services/calendarService";
 import {
   sendTeleworkRequest,
   getCollaboratorEmail,
-} from "../services/emailService";
+} from "../../../services/emailService";
 import EventAvailableIcon from "@mui/icons-material/EventAvailable";
 import Autocomplete from "@mui/material/Autocomplete";
-import { SavedDate } from "../models/SavedDate";
-import { Props } from "../models/Props";
-import { State } from "../models/State";
-import { TeleworkRequest } from "../models/TeleworkRquest";
+import { SavedDate } from "../../../models/SavedDate";
 
-class CollaboratorPart extends Component<Props, State> {
-  constructor(props: Props) {
+import { State } from "../../../models/State";
+import { TeleworkRequest } from "../../../models/TeleworkRquest";
+
+import Box from "@mui/material/Box";
+import Accordion from "@mui/material/Accordion";
+import AccordionSummary from "@mui/material/AccordionSummary";
+import AccordionDetails from "@mui/material/AccordionDetails";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import { ICollaboratorPartProps } from "./ICollaboratorPartProps";
+import { sp } from "@pnp/sp/presets/all";
+import "@pnp/sp/webs";
+import "@pnp/sp/lists";
+import "@pnp/sp/items";
+type HandleChange = (panel: string) => (event: React.SyntheticEvent, isExpanded: boolean) => void;
+class CollaboratorPart extends Component<ICollaboratorPartProps, State> {
+  constructor(props: ICollaboratorPartProps) {
     super(props);
     this.state = {
       selectedDates: new Set(),
@@ -56,11 +67,19 @@ class CollaboratorPart extends Component<Props, State> {
       modalType: "",
       managerEmails: [],
       emailError: undefined,
+      expanded: "",
     };
+    
   }
 
   async componentDidMount(): Promise<void> {
-    const { collaborator } = this.props;
+    sp.setup({
+      sp: {
+        baseUrl: "https://ibsugoy.sharepoint.com/sites/communicationtools",
+      },
+    });
+    const collaborator = this.props.userDisplayName;
+    console.log("voila toi :", collaborator)
     try {
       const savedDatesArray = await getSavedDates(collaborator);
       const managerEmails = await getManagerEmails();
@@ -130,7 +149,7 @@ class CollaboratorPart extends Component<Props, State> {
   };
 
   handleSave = async (manager: string): Promise<void> => {
-    const { collaborator } = this.props;
+    const collaborator = this.props.context.pageContext.user.displayName;
     const { selectedDates, deletedDates } = this.state;
 
     for (const date of selectedDates) {
@@ -189,7 +208,7 @@ class CollaboratorPart extends Component<Props, State> {
     this.setState({ emailError: undefined });
 
     const updateSuccess = await updateDatesWithManager(
-      this.props.collaborator,
+      this.props.context.pageContext.user.displayName,
       managerEmail
     );
     if (!updateSuccess) {
@@ -199,7 +218,9 @@ class CollaboratorPart extends Component<Props, State> {
 
     await this.handleSave(managerEmail);
 
-    const { collaborator, spHttpClient, siteUrl } = this.props;
+    const spHttpClient = this.props.context.spHttpClient;
+    const siteUrl = this.props.context.pageContext.web.absoluteUrl;
+    const collaborator = this.props.context.pageContext.user.displayName;
     const collaboratorEmail = await getCollaboratorEmail(collaborator);
 
     if (!collaboratorEmail) {
@@ -277,62 +298,163 @@ class CollaboratorPart extends Component<Props, State> {
     });
   };
   handleRedirect = (): void => {
-    window.location.href = "/sites/communicationtools";//on doit remplacer ca par le lien de notre page 1
+    window.location.href = "/sites/communicationtools"; //on doit remplacer ca par le lien de notre page 1
+  };
+
+  //
+  handleChange: HandleChange = (panel: string) => (event: React.SyntheticEvent, isExpanded: boolean) => {
+    this.setState({ expanded: isExpanded ? panel : '' });
   };
   render(): JSX.Element {
     const { currentMonth, selectedDates, tooltipMessages, managerEmail } =
       this.state;
     const days = getDaysInMonth(currentMonth);
     const weekdays = ["Lun", "Mar", "Mer", "Jeu", "Ven"];
+    const backgroundImage = `${require("../assets/guidelines.png")}?w=50&h=50&fit=crop&auto=format`;
 
     return (
       <div>
-         <div
-        style={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          width: '100%', 
-          position: 'relative', 
-        }}
-      >
-        <Typography
-          variant="h4"
-          className={styles.customTitle}
+        <div>
+          <Box>
+          <Accordion style={{
+                        padding: "16px",
+                        borderRadius: "10px",
+                        backgroundColor: "rgb(255, 255, 255)",
+                        boxShadow: "rgba(0, 0, 0, 0.08) 1px 2px 6px 4px",
+                    }}>
+              <AccordionSummary
+                expandIcon={<ExpandMoreIcon />}
+                aria-controls="panel1-content"
+                id="panel1-header"
+              sx={{
+                  fontSize: '1.25rem',
+                  padding: '60px 98px',  
+                  backgroundImage: `url(${backgroundImage})`,
+                  backgroundSize: '70px 70px',  
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: '15px center',
+                  height: '100px', 
+              }}
+
+              >
+                <strong style={{color:"#4a4b67"}}>Comment ça marche</strong>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Box display="flex" flexDirection="column" gap={2} width="100%">
+                  <Accordion
+                    expanded={this.state.expanded === "panel2"}
+                    onChange={this.handleChange("panel2")}
+                    sx={{
+                      boxShadow: "none",
+                      border: "none",
+                    }}
+                  >
+
+                    <AccordionDetails>
+                    <p
+                        style={{
+                          fontSize: "1rem",
+                          color: "#868181 ",
+                          letterSpacing: "0.00938em",
+                          lineHeight: "1.5",
+                        }}
+                      >
+                        Vous pouvez sélectionner les jours souhaités dans le
+                        calendrier et enregistrer temporairement votre choix
+                        avant de l&apos;envoyer à votre manager. Une fois prêt,
+                        sélectionnez votre manager dans la liste en bas et
+                        soumettez votre demande. Vous serez ensuite notifié de
+                        l&apos;approbation ou du refus. Voici une  <strong> légende </strong> indiquant
+                        l&apos;état de votre demande selon sa couleur.
+                        
+                        
+                      </p>
+                      <div className={styles.container}>
+                        <div className={styles.legend}>
+                          <div className={styles.legendItem}>
+                            <span
+                              className={`${styles.label} ${styles.approvedd}`}
+                            >
+                              Approuvé
+                            </span>
+                          </div>
+                          <div className={styles.legendItem}>
+                            <span
+                              className={`${styles.label} ${styles.rejectedd}`}
+                            >
+                              Rejeté
+                            </span>
+                          </div>
+                          <div className={styles.legendItem}>
+                            <span
+                              className={`${styles.label} ${styles.pendingg}`}
+                            >
+                              En attente
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </AccordionDetails>
+                  </Accordion>
+                </Box>
+              </AccordionDetails>
+            </Accordion>
+          </Box>
+        </div>
+        <br />
+        <br />
+        <div
           style={{
-            color: '#118ec5',
-            padding: '8px',
-            borderRadius: '8px',
-            textAlign: 'center',
-            flex: 1,
-            position: 'absolute', 
-            left: 0,
-            right: 0,
-            margin: '0 auto',
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            width: "100%",
+            position: "relative",
           }}
         >
-          Planning de Télétravail
-        </Typography>
-        <div style={{ position: 'relative', marginLeft: 'auto', marginRight: '16px' }}>
-          <Tooltip
-            title={
-              <span style={{ fontSize: '18px' }}>
-                Enregistrer le calendrier
-              </span>
-            }
-            arrow
+          <Typography
+            variant="h5"
+            className={styles.customTitle}
+            style={{
+              color: "#118ec5",
+              padding: "8px",
+              borderRadius: "8px",
+              textAlign: "center",
+              flex: 1,
+              position: "absolute",
+              left: 0,
+              right: 0,
+              margin: "0 auto",
+            }}
           >
-            <EventAvailableIcon
-              onClick={() => this.handleSave('')}
-              style={{
-                cursor: 'pointer',
-                color: '#118ec5',
-                fontSize: '45px',
-              }}
-            />
-          </Tooltip>
+            Planning de Télétravail
+          </Typography>
+          <div
+            style={{
+              position: "relative",
+              marginLeft: "auto",
+              marginRight: "16px",
+            }}
+          >
+            <Tooltip
+              title={
+                <span style={{ fontSize: " 0.875rem" }}>
+                  Enregistrer le calendrier
+                </span>
+              }
+              arrow
+            >
+              <EventAvailableIcon
+                onClick={() => this.handleSave("")}
+                style={{
+                  cursor: "pointer",
+                  color: "#118ec5",
+                  fontSize: "35px",
+                }}
+              />
+            </Tooltip>
+          </div>
         </div>
-      </div>
 
         <div className={styles.naviDate}>
           <IconButton
@@ -342,7 +464,7 @@ class CollaboratorPart extends Component<Props, State> {
             <ArrowBackIcon />
           </IconButton>
 
-          <Typography variant="h4" className={styles.customMonth}>
+          <Typography variant="h5" className={styles.customMonth}>
             {currentMonth.format("MMMM YYYY")}
           </Typography>
 
@@ -428,7 +550,7 @@ class CollaboratorPart extends Component<Props, State> {
                           />
                           {status === "Rejeté" && tooltipMessages[dateStr] && (
                             <Tooltip
-                              title={tooltipMessages[dateStr]} 
+                              title={tooltipMessages[dateStr]}
                               placement="top"
                               arrow
                             >
@@ -452,7 +574,13 @@ class CollaboratorPart extends Component<Props, State> {
         <div style={{ position: "relative", marginBottom: "20px" }}>
           {/* Message d'erreur */}
           {this.state.emailError && (
-            <div style={{ color: "red", marginBottom: "8px",fontSize: "14px" }}>
+            <div
+              style={{
+                color: "red",
+                marginBottom: "8px",
+                fontSize: " 0.875rem",
+              }}
+            >
               {this.state.emailError}
             </div>
           )}
@@ -478,12 +606,15 @@ class CollaboratorPart extends Component<Props, State> {
                     onChange={this.handleEmailChange}
                     InputProps={{
                       ...params.InputProps,
-                      style: { fontSize: "18px" },
+                      style: {
+                        fontSize: " 0.875rem",
+                        backgroundColor: "white",
+                      },
                       endAdornment: (
                         <InputAdornment position="end">
                           <Tooltip
                             title={
-                              <span style={{ fontSize: "18px" }}>
+                              <span style={{ fontSize: " 0.875rem" }}>
                                 Envoyer la demande au manager
                               </span>
                             }
@@ -511,14 +642,14 @@ class CollaboratorPart extends Component<Props, State> {
                       ),
                     }}
                     InputLabelProps={{
-                      style: { fontSize: "18px" },
+                      style: { fontSize: " 0.875rem" },
                     }}
                     error={!!this.state.emailError}
                     helperText={null}
                   />
                 )}
                 renderOption={(props, option) => (
-                  <li {...props} style={{ fontSize: "18px" }}>
+                  <li {...props} style={{ fontSize: " 0.875rem" }}>
                     {option}
                   </li>
                 )}
@@ -532,7 +663,11 @@ class CollaboratorPart extends Component<Props, State> {
         </div>
 
         <div
-          style={{ width: "100%", height: "70px", backgroundColor: "white" }}
+          style={{
+            width: "100%",
+            height: "70px",
+            backgroundColor: "transparent",
+          }}
         >
           {/* juste pour l'affichage */}
         </div>

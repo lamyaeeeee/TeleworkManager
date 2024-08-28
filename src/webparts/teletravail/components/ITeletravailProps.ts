@@ -1,10 +1,7 @@
-import { WebPartContext } from "@microsoft/sp-webpart-base";
-
-export interface ICollaboratorPartProps {
+export interface ITeletravailProps {
   description: string;
   isDarkTheme: boolean;
   environmentMessage: string;
   hasTeamsContext: boolean;
   userDisplayName: string;
-  context: WebPartContext,
 }

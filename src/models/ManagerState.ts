@@ -1,6 +1,14 @@
 import { DateUpdate} from "./DateUpdate"
 
-export interface State {
+export interface CollaboratorItem {
+  Titre: string;
+  Collaborateur: { Title: string };
+  Date: string;
+  Statut: string;
+  Manager: { Title: string };
+}
+
+export interface ManagerState {
     collaborators: string[];
     filteredCollaborators: string[];
     selectedCollaborator: string | undefined;
@@ -19,4 +27,9 @@ export interface State {
     openDialogCollab: boolean;
     isManager: boolean;
     loading:boolean,
+    //
+    collaboratorss: CollaboratorItem[];
+    manager: string;
+    filter: string;
+    expanded: string;
   }

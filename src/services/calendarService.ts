@@ -1,6 +1,6 @@
 import { sp } from "@pnp/sp/presets/all";
 import moment from "moment";
-
+import {ItemData} from "../models/ItemData"
 const listName = "DemandeCollaborateur";
 
 const getCollaboratorId = async (collaboratorName: string): Promise<number> => {
@@ -39,7 +39,6 @@ const getManagerIdByEmail = async (managerEmail: string): Promise<number> => {
 };
 
 const convertToLocalDate = (date: string): string => {
-  // Conversion de date locale pour eviter le prob que j'ai rencontré de jour moins d'aujourdhui
   return moment(date).format("YYYY-MM-DDTHH:mm:ss.SSS");
 };
 
@@ -70,12 +69,16 @@ export const saveDate = async (title: string, collaborator: string, date: string
       return false;
     }
 
-    const itemData: any = {
+    const itemData: ItemData = {
       Title: title,
       CollaborateurId: collaboratorId,
       Date: formattedDate,
       Statut: status,
     };
+    
+    if (ManagerId) {
+      itemData.ManagerId = ManagerId;
+    }
 
     if (ManagerId) {
       itemData.ManagerId = ManagerId;
