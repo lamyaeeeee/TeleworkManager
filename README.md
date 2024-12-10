@@ -39,9 +39,8 @@ This project involves the design and implementation of a professional solution t
 - **Version Control**:  
   - Git  
 
-##Project developped by Lamyae OULAD ALI in a PFA internship.
+## Project developped by Lamyae OULAD ALI in a PFA internship.
 
-[picture of the solution in action, if possible]
 
 ## Used SharePoint Framework Version
 
