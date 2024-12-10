@@ -2,7 +2,46 @@
 
 ## Summary
 
-Short summary on functionality and used technologies.
+# Telework Requests Management
+
+## Description
+This project involves the design and implementation of a professional solution to efficiently manage telework requests in a structured manner. The goal is to provide a seamless experience for employees and managers while offering analytical and interactive tools for better decision-making.
+
+## Key Features
+- **Collaborative Calendar**:  
+  - Allows employees to track their telework requests.  
+  - Submit requests to their managers.  
+  - View decisions (approved/rejected) along with reasons for rejection.  
+
+- **Manager Interface**:  
+  - Centralized consultation and processing of requests.  
+  - Analyze and monitor requests through an intuitive and interactive interface.  
+
+- **Advanced Statistics**:  
+  - Integration of graphs and indicators to assist managers in the decision-making process.  
+
+- **Automated Notification System**:  
+  - Alerts managers when new requests are submitted.  
+  - Notifies employees of decisions on their requests.  
+
+## Technical Environment
+- **Frameworks & Platforms**:  
+  - SharePoint Framework (SPFx)  
+  - SharePoint Online  
+
+- **Technologies Used**:  
+  - PnP JS (REST APIs)  
+  - React  
+  - TypeScript  
+  - Material UI  
+  - Sass  
+
+- **Version Control**:  
+  - Git  
+
+## Objective
+Provide a modern and intuitive solution for managing telework requests while optimizing interactions between employees and managers in a structured professional environment.
+
 
 [picture of the solution in action, if possible]
 
