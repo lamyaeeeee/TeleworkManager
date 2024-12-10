@@ -39,9 +39,7 @@ This project involves the design and implementation of a professional solution t
 - **Version Control**:  
   - Git  
 
-## Objective
-Provide a modern and intuitive solution for managing telework requests while optimizing interactions between employees and managers in a structured professional environment.
-
+##Project developped by Lamyae OULAD ALI in a PFA internship.
 
 [picture of the solution in action, if possible]
 
